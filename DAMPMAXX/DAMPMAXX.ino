@@ -1,4 +1,4 @@
-// --------------------------------------------------------------
+ // --------------------------------------------------------------
 // Dikins project
 //
 // by Morgan
@@ -56,8 +56,7 @@
 #define Amp_Write I2C2_Write
 #define Amp_Read I2C2_Read
 #define TASK_ErrorLED_DURATION 200
-#define AmpConfigValue 0x1B // it means enable VLP and i2s standard, no VLP is 0x00
-// #define AmpConfigValue 0x00 // it means enable VLP and i2s standard, no VLP is 0x00, 2020.11.27
+
 // -------------------- Matrix ----------------------------------
 // 7-bit address
 #define Matrix_Addr (0xEA >> 1) // (0xE8 >> 1)
@@ -158,10 +157,11 @@ volatile uint8_t Volt_Level = 3;
 //     44,
 // };
 
-const byte AmpVolume = 0x1A; // based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
-const byte AmpVolumeFrac = 0x02; // new parameter, based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
-const byte AmpLimit = 0x1A;  // based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
-const byte AmpProfile = 0x02; // by Glenn, 2021.3.5
+const byte AmpConfigValue = 0x08; // Bypass the VLP and set I2S standard mode
+const byte AmpVolume = 0x1A;      // based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
+const byte AmpVolumeFrac = 0x02;  // new parameter, based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
+const byte AmpLimit = 0x1A;       // based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
+const byte AmpProfile = 0x02;     // by Glenn, 2021.3.5
 
 enum
 {
@@ -494,13 +494,11 @@ void AmpVolSet()
 {
     // below codes are copied from Glenn's email in 2021.11.16
     // Configure amp A
-    Amp_Write(AMP_01, 0x0A, 0x80);          // Enable soft clip
-    Amp_Write(AMP_01, 0x35, 0xA8);          // Fast attack, slow release, (should be +1 at end)
     Amp_Write(AMP_01, 0x40, AmpVolume);
     Amp_Write(AMP_01, 0x41, AmpVolumeFrac);
     Amp_Write(AMP_01, 0x1D, AmpProfile);    // Power mode Profile 2 - Optimized Audio Performance
 
-//    Amp_Write(AMP_01, 0x36, 0x41);          // Use the limiter
+    Amp_Write(AMP_01, 0x0A, 0x00);          // Disable soft clip
     Amp_Write(AMP_01, 0x36, 0x00);          // Bypass the limiter
 
     Amp_Write(AMP_01, 0x47, AmpLimit);    
@@ -509,13 +507,11 @@ void AmpVolSet()
     Amp_Write(AMP_01, 0x4A, AmpLimit);
 
     // Configure amp B
-    Amp_Write(AMP_02, 0x0A, 0x80);          // Enable soft clip
-    Amp_Write(AMP_02, 0x35, 0xA8);
     Amp_Write(AMP_02, 0x40, AmpVolume);
     Amp_Write(AMP_02, 0x41, AmpVolumeFrac);
     Amp_Write(AMP_02, 0x1D, AmpProfile);
 
-//    Amp_Write(AMP_02, 0x36, 0x41);
+    Amp_Write(AMP_02, 0x0A, 0x00);          // Disable soft clip
     Amp_Write(AMP_02, 0x36, 0x00);          // Bypass the limiter
 
     Amp_Write(AMP_02, 0x47, AmpLimit);
@@ -694,11 +690,26 @@ void setup()
     // Set Output
     AmpEnable();
     delay(50);
-    AmpUnMute();
+
+    Amp_Write(AMP_01, 0x40, 168);
+    Amp_Write(AMP_02, 0x40, 168);
     delay(50);
 
+    TASK_Multiplexer();
+     
+    AmpUnMute();
+
+    unsigned char Ramp =  AmpVolume+80;
+     while (Ramp>AmpVolume)
+    {
+      Ramp--;
+      Amp_Write(AMP_01, 0x40, Ramp);
+      Amp_Write(AMP_02, 0x40, Ramp);
+      delay(50);
+    }
+
     // MA12070 Register Check, after doing AmpEnable()
-    Read_MA12070_Reg();
+    //Read_MA12070_Reg();
 }
 // -------------------- Main Loop -------------------------------
 void loop()
