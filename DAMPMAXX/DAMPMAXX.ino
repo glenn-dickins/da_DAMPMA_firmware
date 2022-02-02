@@ -2,9 +2,10 @@
 // Dikins project
 //
 // by Morgan
-// 2020.12.2
+// 2021.11.17
 // --------------------------------------------------------------
 #include <Wire_slave.h> // In this wire_slave library, wire use I2C1 and wire1 use I2C2
+//#include <Wire.h> // In this wire_slave library, wire use I2C1 and wire1 use I2C2
 
 #define UART0 Serial  // USB Virtual COM
 #define UART1 Serial1 // on PA9(Tx1), PA10(Rx1)
@@ -157,9 +158,10 @@ volatile uint8_t Volt_Level = 3;
 //     44,
 // };
 
-const byte AmpVolume     = 0x1a;              
-const byte AmpVolumeFrac = 0x02;
-const byte AmpLimit = 0x1a;                 // refer Balto program, modified by Morgan, 2020.11.27
+const byte AmpVolume = 0x1A; // based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
+const byte AmpVolumeFrac = 0x02; // new parameter, based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
+const byte AmpLimit = 0x1A;  // based on Glenn's email in 2021.11.16, modified by Morgan, 2020.11.27
+const byte AmpProfile = 0x02; // by Glenn, 2021.3.5
 
 enum
 {
@@ -490,12 +492,13 @@ void CURRENT_AMP_MODE_CHECK(void)
 // --------------------------------------------------------------
 void AmpVolSet()
 {
+    // below codes are copied from Glenn's email in 2021.11.16
     // Configure amp A
     Amp_Write(AMP_01, 0x0A, 0x80);          // Enable soft clip
     Amp_Write(AMP_01, 0x35, 0xA8);          // Fast attack, slow release, (should be +1 at end)
     Amp_Write(AMP_01, 0x40, AmpVolume);
     Amp_Write(AMP_01, 0x41, AmpVolumeFrac);
-
+    Amp_Write(AMP_01, 0x1D, AmpProfile);    // Power mode Profile 2 - Optimized Audio Performance
 
 //    Amp_Write(AMP_01, 0x36, 0x41);          // Use the limiter
     Amp_Write(AMP_01, 0x36, 0x00);          // Bypass the limiter
@@ -510,7 +513,7 @@ void AmpVolSet()
     Amp_Write(AMP_02, 0x35, 0xA8);
     Amp_Write(AMP_02, 0x40, AmpVolume);
     Amp_Write(AMP_02, 0x41, AmpVolumeFrac);
-
+    Amp_Write(AMP_02, 0x1D, AmpProfile);
 
 //    Amp_Write(AMP_02, 0x36, 0x41);
     Amp_Write(AMP_02, 0x36, 0x00);          // Bypass the limiter
@@ -541,8 +544,12 @@ void AmpEnable(void)
 
         // Config AMP 1
         Amp_Write(AMP_01, 0x35, AmpConfigValue);
+        Amp_Write(AMP_01, 0x1D, AmpProfile);    // Power mode Profile 2 - Optimized Audio Performance, by Glenn, 2021.3.5
+
         // Config AMP 2
         Amp_Write(AMP_02, 0x35, AmpConfigValue);
+        Amp_Write(AMP_02, 0x1D, AmpProfile);    // Power mode Profile 2 - Optimized Audio Performance, by Glenn, 2021.3.5
+
         // Check
         CURRENT_AMP_MODE_CHECK();
 
