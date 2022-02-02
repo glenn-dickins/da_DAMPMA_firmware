@@ -157,8 +157,9 @@ volatile uint8_t Volt_Level = 3;
 //     44,
 // };
 
-const byte AmpVolume = 0x1B; // refer Balto program, modified by Morgan, 2020.11.27
-const byte AmpLimit = 0x18;  // refer Balto program, modified by Morgan, 2020.11.27
+const byte AmpVolume     = 0x1a;              
+const byte AmpVolumeFrac = 0x02;
+const byte AmpLimit = 0x1a;                 // refer Balto program, modified by Morgan, 2020.11.27
 
 enum
 {
@@ -490,19 +491,29 @@ void CURRENT_AMP_MODE_CHECK(void)
 void AmpVolSet()
 {
     // Configure amp A
-    Amp_Write(AMP_01, 0x35, 0x88);
+    Amp_Write(AMP_01, 0x0A, 0x80);          // Enable soft clip
+    Amp_Write(AMP_01, 0x35, 0xA8);          // Fast attack, slow release, (should be +1 at end)
     Amp_Write(AMP_01, 0x40, AmpVolume);
-    Amp_Write(AMP_01, 0x36, 0x41);
+    Amp_Write(AMP_01, 0x41, AmpVolumeFrac);
 
-    Amp_Write(AMP_01, 0x47, AmpLimit);
+
+//    Amp_Write(AMP_01, 0x36, 0x41);          // Use the limiter
+    Amp_Write(AMP_01, 0x36, 0x00);          // Bypass the limiter
+
+    Amp_Write(AMP_01, 0x47, AmpLimit);    
     Amp_Write(AMP_01, 0x48, AmpLimit);
     Amp_Write(AMP_01, 0x49, AmpLimit);
     Amp_Write(AMP_01, 0x4A, AmpLimit);
 
     // Configure amp B
-    Amp_Write(AMP_02, 0x35, 0x88);
+    Amp_Write(AMP_02, 0x0A, 0x80);          // Enable soft clip
+    Amp_Write(AMP_02, 0x35, 0xA8);
     Amp_Write(AMP_02, 0x40, AmpVolume);
-    Amp_Write(AMP_02, 0x36, 0x41);
+    Amp_Write(AMP_02, 0x41, AmpVolumeFrac);
+
+
+//    Amp_Write(AMP_02, 0x36, 0x41);
+    Amp_Write(AMP_02, 0x36, 0x00);          // Bypass the limiter
 
     Amp_Write(AMP_02, 0x47, AmpLimit);
     Amp_Write(AMP_02, 0x48, AmpLimit);
